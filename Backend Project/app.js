@@ -5,7 +5,7 @@ const postModel = require('./models/post');
 const cookieParser = require('cookie-parser');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { resolveInclude } = require('ejs');
+
 
 app.set('view engine' , 'ejs');
 app.use(express.json());
@@ -20,9 +20,23 @@ app.get('/login',(req,res)=>{
     res.render("login");
 });
 
-app.get('/profile', isLoggedin,(req,res)=>{
-    console.log(req.user);
-    res.render("login");
+app.get('/profile', isLoggedin,async (req,res)=>{
+    let user = await userModel.findOne({email : req.user.email}).populate('posts');
+    res.render("profile",{user});
+});
+
+app.post('/posts', isLoggedin,async (req,res)=>{
+    let user = await userModel.findOne({email : req.user.email});
+    let {content} = req.body;
+    let post = await postModel.create({
+        content,
+        user : user._id
+    });
+    user.posts.push(post._id);
+    await user.save();
+    res.redirect('/profile');
+
+    
 });
 
 app.post('/register', isLoggedin, async (req,res)=>{
@@ -65,7 +79,7 @@ app.post('/login',async (req,res)=>{
         if(result) {
             let token = jwt.sign({email : email , userid : user._id}, "shhh")
             res.cookie('token',token);
-            res.status(200).send("User can login!");
+            res.status(200).redirect("/profile");
         }
         else res.redirect("/login");
     })
@@ -80,6 +94,8 @@ function isLoggedin(req,res,next){
         next();
     }
 }
+
+
 
 app.get('/logout',(req,res)=>{
     res.cookie('token','');
