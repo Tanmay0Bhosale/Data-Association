@@ -7,22 +7,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const path = require('path');
-const multer = require('multer');
-
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, './public/images/uploads')
-    },
-    filename: function (req, file, cb) {
-      crypto.randomBytes(12, function(err,bytes){
-        const fn = bytes.toString('hex') + path.extname(file.originalname);
-        cb(null, fn)   
-      })
-    }
-  })
-  
-  const upload = multer({ storage: storage })
-
+const multerconfig = require('./config/multerconfig');
+app.use(express.static(path.join(__dirname,'public')));
 
 app.set('view engine' , 'ejs');
 app.use(express.json());
@@ -33,13 +19,7 @@ app.get('/',(req,res)=>{
     res.render("index");
 });
 
-app.get('/test',(req,res)=>{
-    res.render("test");
-});
 
-app.post('/upload', upload.single("image"),(req,res)=>{
-    console.log(req.file);
-});
 
 app.get('/login',(req,res)=>{
     res.render("login");
@@ -88,7 +68,7 @@ app.post('/posts', isLoggedin,async (req,res)=>{
     
 });
 
-app.post('/register', isLoggedin, async (req,res)=>{
+app.post('/register', async (req,res)=>{
 
     let {username,name,email,password,age} = req.body;
     let user = await userModel.findOne({email});
