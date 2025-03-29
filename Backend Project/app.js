@@ -7,7 +7,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const path = require('path');
-const multerconfig = require('./config/multerconfig');
+const upload = require('./config/multerconfig');
+const { log } = require('console');
 app.use(express.static(path.join(__dirname,'public')));
 
 app.set('view engine' , 'ejs');
@@ -19,7 +20,16 @@ app.get('/',(req,res)=>{
     res.render("index");
 });
 
+app.get('/profile/upload',(req,res)=>{
+    res.render("profileupload");
+});
 
+app.post('/upload', isLoggedin ,upload.single("image") ,async (req,res)=>{
+    let user = await userModel.findOne({email : req.user.email});
+    user.profilepic = req.file.filename;
+    await user.save();
+    res.redirect("/profile");
+})
 
 app.get('/login',(req,res)=>{
     res.render("login");
